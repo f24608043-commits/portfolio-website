@@ -1,9 +1,18 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useGameStore } from '../../stores/gameStore';
 import { useRef, useEffect, useState } from 'react';
-import { Vector3, Euler } from 'three';
+import { Vector3, Euler, Quaternion } from 'three';
 import { LOCATIONS } from '../../data/locations';
 import { gsap } from 'gsap';
+
+interface AnimationState {
+  isMoving: boolean;
+  isRunning: boolean;
+  walkCycle: number;
+  legPhase: number;
+  armPhase: number;
+  bodyBob: number;
+}
 
 export function Player() {
   const { camera, gl } = useThree();
@@ -18,6 +27,28 @@ export function Player() {
   const rotationRef = useRef(new Euler(0, 0, 0, 'YXZ'));
   const cameraOffset = new Vector3(0, 3, 8);
   const targetRotation = new Euler(0, 0, 0, 'YXZ');
+  
+  // Animation refs
+  const walkCycleRef = useRef(0);
+  const legPhaseRef = useRef(0);
+  const armPhaseRef = useRef(0);
+  const bodyBobRef = useRef(0);
+  const isMovingRef = useRef(false);
+  const isRunningRef = useRef(false);
+  
+  // GSAP animation timelines for smooth transitions
+  const walkTimelineRef = useRef<gsap.core.Timeline | null>(null);
+  const runTimelineRef = useRef<gsap.core.Timeline | null>(null);
+  const idleTimelineRef = useRef<gsap.core.Timeline | null>(null);
+  
+  // Character parts refs for GSAP animation
+  const bodyRef = useRef<Group | null>(null);
+  const headRef = useRef<Group | null>(null);
+  const leftLegRef = useRef<Group | null>(null);
+  const rightLegRef = useRef<Group | null>(null);
+  const leftArmRef = useRef<Group | null>(null);
+  const rightArmRef = useRef<Group | null>(null);
+  const capeRef = useRef<Mesh | null>(null);
   
   const moveSpeed = 0.15;
   const runSpeed = 0.3;
@@ -66,6 +97,51 @@ export function Player() {
     };
   }, [gl, isPointerLocked]);
 
+  // Initialize GSAP animation timelines
+  useEffect(() => {
+    // Create walk animation timeline
+    walkTimelineRef.current = gsap.timeline({ repeat: -1, paused: true })
+      .to({}, {
+        duration: 0.5,
+        ease: 'power2.inOut',
+        onUpdate: () => {
+          walkCycleRef.current += 0.5;
+          legPhaseRef.current = Math.sin(walkCycleRef.current * Math.PI * 2) * 0.8;
+          armPhaseRef.current = Math.sin(walkCycleRef.current * Math.PI * 2 + Math.PI) * 0.5;
+          bodyBobRef.current = Math.sin(walkCycleRef.current * Math.PI * 2) * 0.05;
+        }
+      });
+
+    // Run timeline (faster)
+    runTimelineRef.current = gsap.timeline({ repeat: -1, paused: true })
+      .to({}, {
+        duration: 0.3,
+        ease: 'power2.inOut',
+        onUpdate: () => {
+          walkCycleRef.current += 0.8;
+          legPhaseRef.current = Math.sin(walkCycleRef.current * Math.PI * 2) * 1.2;
+          armPhaseRef.current = Math.sin(walkCycleRef.current * Math.PI * 2 + Math.PI) * 0.8;
+          bodyBobRef.current = Math.sin(walkCycleRef.current * Math.PI * 2) * 0.08;
+        }
+      });
+
+    // Idle breathing animation
+    idleTimelineRef.current = gsap.timeline({ repeat: -1, yoyo: true })
+      .to({}, {
+        duration: 3,
+        ease: 'power2.inOut',
+        onUpdate: () => {
+          bodyBobRef.current = Math.sin(gsap.utils.wrap(0, 1, walkCycleRef.current) * Math.PI * 2) * 0.02;
+        }
+      });
+
+    return () => {
+      walkTimelineRef.current?.kill();
+      runTimelineRef.current?.kill();
+      idleTimelineRef.current?.kill();
+    };
+  }, []);
+
   // Movement logic
   useFrame((state, delta) => {
     const dt = Math.min(delta, 1 / 30);
@@ -89,9 +165,13 @@ export function Player() {
       
       // Apply velocity with acceleration
       velocityRef.current.lerp(directionRef.current.multiplyScalar(currentSpeed), 0.15);
+      isMovingRef.current = true;
+      isRunningRef.current = isRunning;
     } else {
       // Deceleration
       velocityRef.current.multiplyScalar(damping);
+      isMovingRef.current = false;
+      isRunningRef.current = false;
     }
     
     // Update position
@@ -136,6 +216,23 @@ export function Player() {
     
     // Check area transitions
     checkAreaTransition();
+    
+    // Control animation timelines based on movement state
+    if (isMovingRef.current) {
+      if (isRunningRef.current && runTimelineRef.current) {
+        walkTimelineRef.current?.pause();
+        idleTimelineRef.current?.pause();
+        runTimelineRef.current.play();
+      } else if (!isRunningRef.current && walkTimelineRef.current) {
+        runTimelineRef.current?.pause();
+        idleTimelineRef.current?.pause();
+        walkTimelineRef.current.play();
+      }
+    } else {
+      walkTimelineRef.current?.pause();
+      runTimelineRef.current?.pause();
+      idleTimelineRef.current?.play();
+    }
   });
 
   const checkAreaTransition = () => {
@@ -155,7 +252,20 @@ export function Player() {
 
   return (
     <group position={playerRef.current.toArray()} rotation={rotationRef.current.toArray()}>
-      <PlayerCharacter />
+      <PlayerCharacter
+        ref={bodyRef}
+        headRef={headRef}
+        leftLegRef={leftLegRef}
+        rightLegRef={rightLegRef}
+        leftArmRef={leftArmRef}
+        rightArmRef={rightArmRef}
+        capeRef={capeRef}
+        legPhase={legPhaseRef.current}
+        armPhase={armPhaseRef.current}
+        bodyBob={bodyBobRef.current}
+        isMoving={isMovingRef.current}
+        isRunning={isRunningRef.current}
+      />
       {/* Collision capsule for physics */}
       <mesh visible={false}>
         <capsuleGeometry args={[0.6, 1.2, 4, 8]} />
@@ -165,21 +275,100 @@ export function Player() {
   );
 }
 
-function PlayerCharacter() {
+function checkAreaTransition = () => {
+  for (const loc of LOCATIONS) {
+    const dx = playerRef.current.x - loc.position[0];
+    const dz = playerRef.current.z - loc.position[2];
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    
+    if (dist < 15 && loc.interactable) {
+      if (player.currentArea !== loc.id) {
+        visitArea(loc.id);
+      }
+      break;
+    }
+  }
+};
+
+// Animate character parts using GSAP-driven values
+function PlayerCharacter({
+  ref,
+  headRef,
+  leftLegRef,
+  rightLegRef,
+  leftArmRef,
+  rightArmRef,
+  capeRef,
+  legPhase,
+  armPhase,
+  bodyBob,
+  isMoving,
+  isRunning,
+}: {
+  ref: React.RefObject<Group>;
+  headRef: React.RefObject<Group>;
+  leftLegRef: React.RefObject<Group>;
+  rightLegRef: React.RefObject<Group>;
+  leftArmRef: React.RefObject<Group>;
+  rightArmRef: React.RefObject<Group>;
+  capeRef: React.RefObject<Mesh>;
+  legPhase: number;
+  armPhase: number;
+  bodyBob: number;
+  isMoving: boolean;
+  isRunning: boolean;
+}) {
+  const { settings } = useGameStore();
+  
+  // Apply animation to character parts using useFrame
+  useFrame(() => {
+    // Body bob
+    if (ref.current) {
+      ref.current.position.y = bodyBob;
+    }
+    
+    // Leg animation
+    if (leftLegRef.current && rightLegRef.current) {
+      leftLegRef.current.rotation.x = legPhase;
+      rightLegRef.current.rotation.x = -legPhase;
+      
+      // Knee bend
+      if (leftLegRef.current.children[1] && rightLegRef.current.children[1]) {
+        leftLegRef.current.children[1].rotation.x = Math.max(0, -legPhase * 0.5);
+        rightLegRef.current.children[1].rotation.x = Math.max(0, legPhase * 0.5);
+      }
+    }
+    
+    // Arm animation
+    if (leftArmRef.current && rightArmRef.current) {
+      leftArmRef.current.rotation.x = -armPhase;
+      rightArmRef.current.rotation.x = armPhase;
+    }
+    
+    // Cape flutter
+    if (capeRef.current) {
+      const time = performance.now() * 0.001;
+      capeRef.current.rotation.z = Math.sin(time * 2) * 0.05 * (isMoving ? 1 : 0.3);
+      capeRef.current.position.x = Math.sin(time * 1.5) * 0.02;
+    }
+  });
+
   const { settings } = useGameStore();
   const time = useFrame((state) => state.clock.getElapsedTime());
   
-  // Simple animated pixel knight
+  const walkSpeed = isRunning ? 8 : 8;
+  const walkAmount = Math.sin(time * walkSpeed) * 0.4;
+  
   return (
     <group name="player-character" scale={settings.quality === 'low' ? 0.8 : 1}>
       {/* Body */}
-      <mesh castShadow receiveShadow>
+      <mesh castShadow receiveShadow ref={ref}>
         <boxGeometry args={[0.6, 1.2, 0.4]} />
         <meshStandardMaterial color="#2c3e50" roughness={0.7} metalness={0.3} />
       </mesh>
       
       {/* Head */}
-      <mesh position={[0, 1.1, 0]} castShadow receiveShadow>
+      <mesh position={[0, 1.1, 0]} castShadow receiveShadow ref={headRef}>
         <boxGeometry args={[0.5, 0.5, 0.5]} />
         <meshStandardMaterial color="#fdbcb4" roughness={0.8} />
       </mesh>
@@ -191,7 +380,7 @@ function PlayerCharacter() {
       </mesh>
       
       {/* Cape */}
-      <mesh position={[0, 0.6, -0.25]} castShadow receiveShadow>
+      <mesh position={[0, 0.6, -0.25]} castShadow receiveShadow ref={capeRef}>
         <planeGeometry args={[0.7, 1.2]} />
         <meshStandardMaterial 
           color="#e74c3c" 
@@ -238,71 +427,44 @@ function PlayerCharacter() {
         </mesh>
       </group>
       
-      {/* Legs animation */}
-      <Legs time={time} />
+      {/* Legs */}
+      <Leg ref={leftLegRef} isLeft={true} />
+      <Leg ref={rightLegRef} isLeft={false} />
       
-      {/* Arms animation */}
-      <Arms time={time} />
+      {/* Arms */}
+      <Arm ref={leftArmRef} isLeft={true} />
+      <Arm ref={rightArmRef} isLeft={false} />
     </group>
   );
 }
 
-function Legs({ time }: { time: number }) {
-  const walkSpeed = 8;
-  const walkAmount = Math.sin(time * walkSpeed) * 0.4;
-  
+function Leg({ ref, isLeft }: { ref: React.RefObject<Group>; isLeft: boolean }) {
   return (
-    <>
-      <group position={[-0.2, -0.6, 0]} rotation={[walkAmount, 0, 0]}>
-        <mesh castShadow receiveShadow>
-          <boxGeometry args={[0.15, 0.6, 0.15]} />
-          <meshStandardMaterial color="#1a252f" roughness={0.8} />
-        </mesh>
-        <mesh position={[0, -0.4, 0]} castShadow receiveShadow>
-          <boxGeometry args={[0.18, 0.18, 0.18]} />
-          <meshStandardMaterial color="#1a252f" roughness={0.8} />
-        </mesh>
-      </group>
-      <group position={[0.2, -0.6, 0]} rotation={[-walkAmount, 0, 0]}>
-        <mesh castShadow receiveShadow>
-          <boxGeometry args={[0.15, 0.6, 0.15]} />
-          <meshStandardMaterial color="#1a252f" roughness={0.8} />
-        </mesh>
-        <mesh position={[0, -0.4, 0]} castShadow receiveShadow>
-          <boxGeometry args={[0.18, 0.18, 0.18]} />
-          <meshStandardMaterial color="#1a252f" roughness={0.8} />
-        </mesh>
-      </group>
-    </>
+    <group ref={ref} position={isLeft ? [-0.2, -0.6, 0] : [0.2, -0.6, 0]}>
+      <mesh castShadow receiveShadow>
+        <boxGeometry args={[0.15, 0.6, 0.15]} />
+        <meshStandardMaterial color="#1a252f" roughness={0.8} />
+      </mesh>
+      <mesh position={[0, -0.4, 0]} castShadow receiveShadow>
+        <boxGeometry args={[0.18, 0.18, 0.18]} />
+        <meshStandardMaterial color="#1a252f" roughness={0.8} />
+      </mesh>
+    </group>
   );
 }
 
-function Arms({ time }: { time: number }) {
-  const walkSpeed = 8;
-  const walkAmount = Math.sin(time * walkSpeed) * 0.3;
-  
+function Arm({ ref, isLeft }: { ref: React.RefObject<Group>; isLeft: boolean }) {
+  const sign = isLeft ? -1 : 1;
   return (
-    <>
-      <group position={[-0.4, 0.4, 0]} rotation={[-walkAmount, 0, -0.2]}>
-        <mesh castShadow receiveShadow>
-          <boxGeometry args={[0.12, 0.5, 0.12]} />
-          <meshStandardMaterial color="#fdbcb4" roughness={0.8} />
-        </mesh>
-        <mesh position={[0, -0.35, 0]} castShadow>
-          <sphereGeometry args={[0.1, 8, 8]} />
-          <meshStandardMaterial color="#fdbcb4" roughness={0.8} />
-        </mesh>
-      </group>
-      <group position={[0.4, 0.4, 0]} rotation={[walkAmount, 0, 0.2]}>
-        <mesh castShadow receiveShadow>
-          <boxGeometry args={[0.12, 0.5, 0.12]} />
-          <meshStandardMaterial color="#fdbcb4" roughness={0.8} />
-        </mesh>
-        <mesh position={[0, -0.35, 0]} castShadow>
-          <sphereGeometry args={[0.1, 8, 8]} />
-          <meshStandardMaterial color="#fdbcb4" roughness={0.8} />
-        </mesh>
-      </group>
-    </>
+    <group ref={ref} position={[sign * 0.4, 0.4, 0]} rotation={[0, 0, sign * -0.2]}>
+      <mesh castShadow receiveShadow>
+        <boxGeometry args={[0.12, 0.5, 0.12]} />
+        <meshStandardMaterial color="#fdbcb4" roughness={0.8} />
+      </mesh>
+      <mesh position={[0, -0.35, 0]} castShadow>
+        <sphereGeometry args={[0.1, 8, 8]} />
+        <meshStandardMaterial color="#fdbcb4" roughness={0.8} />
+      </mesh>
+    </group>
   );
 }

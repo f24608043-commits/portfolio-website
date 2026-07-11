@@ -4,14 +4,56 @@ import { MiniMap } from './MiniMap';
 import { QuestLog } from './QuestLog';
 import { Inventory } from './Inventory';
 import { SettingsPanel } from './SettingsPanel';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { gsap } from 'gsap';
 
 export function GameUI() {
   const { player } = useGameStore();
   const [showQuestLog, setShowQuestLog] = useState(false);
   const [showInventory, setShowInventory] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [_showMiniMap] = useState(true);
+  const [showMiniMap] = useState(true);
+  
+  const questLogRef = useRef<HTMLDivElement>(null);
+  const inventoryRef = useRef<HTMLDivElement>(null);
+  const settingsRef = useRef<HTMLDivElement>(null);
+
+  // Animate panel open/close with GSAP
+  useEffect(() => {
+    if (!questLogRef.current) return;
+    if (showQuestLog) {
+      gsap.fromTo(questLogRef.current,
+        { opacity: 0, scale: 0.9, y: 20 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.3, ease: 'back.out(1.7)' }
+      );
+    } else {
+      gsap.to(questLogRef.current, { opacity: 0, scale: 0.9, y: 20, duration: 0.2, ease: 'power2.in' });
+    }
+  }, [showQuestLog]);
+
+  useEffect(() => {
+    if (!inventoryRef.current) return;
+    if (showInventory) {
+      gsap.fromTo(inventoryRef.current,
+        { opacity: 0, scale: 0.9, y: 20 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.3, ease: 'back.out(1.7)' }
+      );
+    } else {
+      gsap.to(inventoryRef.current, { opacity: 0, scale: 0.9, y: 20, duration: 0.2, ease: 'power2.in' });
+    }
+  }, [showInventory]);
+
+  useEffect(() => {
+    if (!settingsRef.current) return;
+    if (showSettings) {
+      gsap.fromTo(settingsRef.current,
+        { opacity: 0, scale: 0.9, y: 20 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.3, ease: 'back.out(1.7)' }
+      );
+    } else {
+      gsap.to(settingsRef.current, { opacity: 0, scale: 0.9, y: 20, duration: 0.2, ease: 'power2.in' });
+    }
+  }, [showSettings]);
 
   return (
     <>
@@ -75,9 +117,24 @@ export function GameUI() {
         </div>
       </Html>
 
-      {showQuestLog && <QuestLog onClose={() => setShowQuestLog(false)} />}
-      {showInventory && <Inventory onClose={() => setShowInventory(false)} />}
-      {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
+      {showQuestLog && (
+        <QuestLog 
+          ref={questLogRef} 
+          onClose={() => setShowQuestLog(false)} 
+        />
+      )}
+      {showInventory && (
+        <Inventory 
+          ref={inventoryRef} 
+          onClose={() => setShowInventory(false)} 
+        />
+      )}
+      {showSettings && (
+        <SettingsPanel 
+          ref={settingsRef} 
+          onClose={() => setShowSettings(false)} 
+        />
+      )}
     </>
   );
 }

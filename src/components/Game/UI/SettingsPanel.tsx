@@ -1,27 +1,49 @@
 import { useGameStore } from '../../stores/gameStore';
+import { useRef, forwardRef, useImperativeHandle } from 'react';
+import { gsap } from 'gsap';
 
-export function SettingsPanel({ onClose }: { onClose: () => void }) {
+export const SettingsPanel = forwardRef<HTMLDivElement, { onClose: () => void }>(({ onClose }, ref) => {
   const { settings, updateSettings } = useGameStore();
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    animateIn() {
+      if (!panelRef.current) return;
+      gsap.fromTo(panelRef.current, 
+        { scale: 0.8, opacity: 0, y: 30 },
+        { scale: 1, opacity: 1, y: 0, duration: 0.3, ease: 'back.out(1.7)' }
+      );
+    },
+    animateOut() {
+      if (!panelRef.current) return;
+      return gsap.to(panelRef.current, { 
+        scale: 0.8, opacity: 0, y: -30, duration: 0.2, ease: 'power2.in' 
+      });
+    }
+  }, []);
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-      width: '90%',
-      maxWidth: '600px',
-      maxHeight: '80vh',
-      background: 'rgba(26, 26, 46, 0.98)',
-      border: '2px solid #4ecdc4',
-      borderRadius: '12px',
-      padding: '24px',
-      overflow: 'auto',
-      zIndex: 1000,
-      color: '#fff',
-      fontFamily: 'monospace',
-      boxShadow: '0 0 40px rgba(78, 205, 196, 0.2)',
-    }}>
+    <div
+      ref={panelRef}
+      style={{
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: '90%',
+        maxWidth: '600px',
+        maxHeight: '80vh',
+        background: 'rgba(26, 26, 46, 0.98)',
+        border: '2px solid #4ecdc4',
+        borderRadius: '12px',
+        padding: '24px',
+        overflow: 'auto',
+        zIndex: 1000,
+        color: '#fff',
+        fontFamily: 'monospace',
+        boxShadow: '0 0 40px rgba(78, 205, 196, 0.2)',
+      }}
+    >
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
