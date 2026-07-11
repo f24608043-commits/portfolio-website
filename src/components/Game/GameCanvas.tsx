@@ -17,13 +17,13 @@ export function GameCanvas() {
   }, []);
 
   return (
-    <Canvas
-      camera={{ position: [0, 5, 10], fov: 60 }}
+<Canvas
+      camera={{ position: [0, 3, 8], fov: 60 }}
       gl={{ antialias: settings.quality !== 'low', preserveDrawingBuffer: true }}
       shadows={settings.quality !== 'low'}
       dpr={Math.min(window.devicePixelRatio, settings.quality === 'ultra' ? 2 : 1.5)}
       onCreated={(gl) => {
-        gl.toneMapping = 1; // ACESFilmicToneMapping
+        gl.toneMapping = 1;
         gl.toneMappingExposure = 1;
       }}
     >

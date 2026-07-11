@@ -934,6 +934,9 @@ function App() {
         loadingProgress: 1,
         showClassicView: false,
       });
+
+      // Initialize store (hides loading screen)
+      useGameStore.getState().initialize();
     };
 
     initGame().catch(console.error);

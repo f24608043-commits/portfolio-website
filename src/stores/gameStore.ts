@@ -215,6 +215,9 @@ const defaultUI: UIState = {
   tooltip: null,
 };
 
+// Track initialization
+let hasInitialized = false;
+
 const defaultNPCs: Record<string, { position: [number, number, number]; state: string }> = {};
 
 const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -412,7 +415,8 @@ export const useGameStore = create<GameStore>()(
           ultra: { quality: 'ultra', showFPS: true },
         };
         return { settings: { ...state.settings, ...presets[quality], quality } };
-      }),
+      })),
+      initialize: () => set({ isLoading: false, loadingProgress: 1 }),
 
       // World
       updateGameTime: (deltaTime) => set((state) => ({
@@ -505,6 +509,12 @@ export const useGameStore = create<GameStore>()(
           ui: defaultUI,
           npcs: defaultNPCs,
         });
+      },
+      initialize: () => {
+        // Auto-hide loading screen after assets load
+        setTimeout(() => {
+          set({ isLoading: false, loadingProgress: 1 });
+        }, 500);
       },
     }),
     {
