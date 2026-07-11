@@ -1,0 +1,56 @@
+export const milestones = [
+  {
+    id: 1,
+    period: "2020 – 2022",
+    school: "Seeds Montessori",
+    description: "Where the curiosity started. Early foundational learning with a focus on creative exploration and community building.",
+    tags: ["Early Education", "Creativity"],
+    icon: "child_care",
+    doodle: '"First steps!" 🌱',
+    doodleColor: "text-tertiary",
+    side: "left",
+  },
+  {
+    id: 2,
+    period: "2022 – 2024",
+    school: "Punjab College",
+    description: "Advanced academic rigor. Developed core analytical skills and logic. Participated in technology-driven extracurriculars.",
+    tags: ["Pre-Engineering", "Logic"],
+    icon: "school",
+    doodle: '"Late night grinds..." 📖',
+    doodleColor: "text-primary",
+    side: "right",
+  },
+  {
+    id: 3,
+    period: "2024 – Present",
+    school: "National University of Technology",
+    description: "Deep diving into Computer Science and Software Engineering. Focused on modern web architectures and computational theories.",
+    tags: ["CompSci", "Engineering"],
+    icon: "terminal",
+    doodle: '"Now we\'re building!" 🚀',
+    doodleColor: "text-secondary",
+    side: "left",
+  },
+];
+
+export const certifications = [
+  {
+    id: 1,
+    title: "Frontend Masterclass",
+    description: "Advanced UI patterns, Animation logic, and Performance optimization.",
+    badge: "Verified Credentials",
+    icon: "verified",
+    iconBg: "bg-tertiary-container",
+    iconColor: "text-on-tertiary-container",
+  },
+  {
+    id: 2,
+    title: "Data Structures A-Z",
+    description: "Algorithmic complexity, sorting mechanisms, and memory management.",
+    badge: "Engineering Mastery",
+    icon: "database",
+    iconBg: "bg-primary-container",
+    iconColor: "text-on-primary-container",
+  },
+];

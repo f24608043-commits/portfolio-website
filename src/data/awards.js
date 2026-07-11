@@ -1,0 +1,27 @@
+export const awards = [
+  {
+    id: 1,
+    title: "Runner Up — Allama Iqbal's Poetry Baitbazi",
+    subtitle: "Academic Excellence",
+    description: "Mastering the art of poetic duel, celebrating the literary legacy of Iqbal through quick wit and rhythmic verse. A moment where words became weapons of art.",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuA6CNU2tSOncoe4jEEumfP_2YrsGUkGZVWmwwaSClzN8VmMJJt8BR6JhPFjsjHNV5HVAN_EC-g8Git9JWAOoOXSak_lMrjiwDHtjDFrjoGlxWm6a22mfBHR6p7RLsBUqHBWHbs9f8V10sp8RkqkrKk2O3QprBVgiPznuPEhHA6geMpCtzo-YtCjNyPDU8U5cQb9PSdpnNyjDkceZ-U9ddJJ5aCgk1D8pbVO61NN2G7RTDjj5ElElS6DqkFeW0CG-KO0irCzOKi7eww",
+    tags: ["Literary", "Competition"],
+    badgeIcon: "emoji_events",
+    badgeBg: "bg-primary",
+    badgeColor: "text-on-primary",
+    large: true,
+    rotation: 1,
+  },
+  {
+    id: 2,
+    title: "Innovista Volunteer Certificate",
+    subtitle: "Issue Date: 2023",
+    description: "Serving at the intersection of innovation and community. Contribution towards organizing high-impact tech events and fostering creative collaboration.",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDiRzhbbUy0nHgpH4gsNRmOvRRuhJj05HHcSF2y_qbLJ9NFxZvhsKNbQPJujnVaI74jH9-zc4cajiTyStw6xsQFitpQPaZQE2HGJRSlWeLSyELBz66gK7XpcuinuVXq5yC7gSj7tsJt9qcKyucFuCvDOPuLcup3lW_mfE0PiRCpscHD3RxybIoZUpDMPNBOAx-S1hqt2wnCKuwuQj4iA_Un1z6MkeHQpJkXTTZoygNT_D_aFDFoirMyOBoic3zfLQSJ94DK8iDna0A",
+    badgeIcon: "verified",
+    badgeBg: "bg-secondary",
+    badgeColor: "text-on-secondary",
+    large: false,
+    rotation: -1,
+  },
+];
