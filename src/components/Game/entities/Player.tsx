@@ -3,6 +3,7 @@ import { useGameStore } from '../../stores/gameStore';
 import { useRef, useEffect, useState } from 'react';
 import { Vector3, Euler } from 'three';
 import { LOCATIONS } from '../../data/locations';
+import { gsap } from 'gsap';
 
 export function Player() {
   const { camera, gl } = useThree();
